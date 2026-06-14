@@ -73,7 +73,10 @@ export default function SpeakingPracticePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [userTranscript, setUserTranscript] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [inputMode, setInputMode] = useState<"voice" | "type">("voice");
+  const [typedInput, setTypedInput] = useState("");
   const recognitionRef = useRef<any>(null);
   const speechSynthesisRef = useRef<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -93,12 +96,15 @@ export default function SpeakingPracticePage() {
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
 
+    recognition.maxAlternatives = 3;
+
     recognition.onresult = (event: any) => {
       let interim = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           setUserTranscript((prev) => (prev ? prev + " " + transcript : transcript));
+          setIsEditing(true); // Allow editing after final result
         } else {
           interim += transcript;
         }
@@ -155,13 +161,16 @@ export default function SpeakingPracticePage() {
     recognitionRef.current.stop();
   };
 
-  const sendMessage = async () => {
-    if (!userTranscript.trim() || loading || !selectedScenario) return;
+  const sendMessage = async (overrideText?: string) => {
+    const text = overrideText || (inputMode === "type" ? typedInput : userTranscript);
+    if (!text.trim() || loading || !selectedScenario) return;
 
-    const userMessage: Message = { role: "user", content: userTranscript };
+    const userMessage: Message = { role: "user", content: text };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setUserTranscript("");
+    setTypedInput("");
+    setIsEditing(false);
     setLoading(true);
 
     try {
@@ -286,69 +295,119 @@ export default function SpeakingPracticePage() {
         </div>
       </div>
 
-      {/* Recording section */}
-      <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
-        <div className="text-center">
-          {/* Transcript display */}
-          <div className="mb-6">
-            <p className="text-xs text-slate-500 mb-2">You said:</p>
-            <div className="bg-white border border-orange-200 rounded-xl px-4 py-3 min-h-12 text-center">
-              {userTranscript ? (
-                <p className="text-slate-800">{userTranscript}</p>
-              ) : (
-                <p className="text-slate-400 italic">Waiting for your voice...</p>
+      {/* Mode toggle */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setInputMode("voice")}
+          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${inputMode === "voice" ? "bg-orange-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+        >
+          🎙️ Speak
+        </button>
+        <button
+          onClick={() => setInputMode("type")}
+          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${inputMode === "type" ? "bg-orange-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+        >
+          ⌨️ Type (fallback)
+        </button>
+      </div>
+
+      {inputMode === "voice" ? (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
+          {/* Transcript — editable after recognition */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-slate-500">What you said: <span className="text-amber-600">(แก้ไขได้ถ้าไม่ถูก)</span></p>
+              {userTranscript && !isListening && (
+                <button onClick={() => { setUserTranscript(""); setIsEditing(false); }} className="text-xs text-slate-400 hover:text-red-500">
+                  ✕ Clear
+                </button>
               )}
             </div>
+            {isEditing ? (
+              <textarea
+                value={userTranscript}
+                onChange={(e) => setUserTranscript(e.target.value)}
+                className="w-full bg-white border border-orange-300 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                rows={2}
+                placeholder="Edit text here if recognition was wrong..."
+              />
+            ) : (
+              <div className="bg-white border border-orange-200 rounded-xl px-4 py-3 min-h-12">
+                {userTranscript ? (
+                  <p className="text-slate-800 text-sm">{userTranscript}</p>
+                ) : (
+                  <p className="text-slate-400 italic text-sm">กด Record แล้วพูดเป็นภาษาอังกฤษ...</p>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Recording buttons */}
-          <div className="flex gap-3 justify-center mb-4">
+          {/* Buttons */}
+          <div className="flex gap-3">
             {!isListening ? (
               <button
                 onClick={startListening}
                 disabled={loading}
-                className="flex-1 max-w-48 px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                🎙️ Start Recording
+                🎙️ Record
               </button>
             ) : (
               <button
                 onClick={stopListening}
-                className="flex-1 max-w-48 px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors animate-pulse flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-red-700 text-white rounded-xl font-medium transition-colors animate-pulse"
               >
-                ⏹️ Stop
+                ⏹️ Stop Recording
               </button>
             )}
-
             {userTranscript && !isListening && (
               <button
-                onClick={sendMessage}
+                onClick={() => sendMessage()}
                 disabled={loading}
-                className="flex-1 max-w-48 px-6 py-3 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 disabled:opacity-50 transition-colors"
+                className="flex-1 py-3 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 disabled:opacity-50 transition-colors"
               >
-                {loading ? "Listening..." : "Send →"}
+                {loading ? "..." : "Send →"}
               </button>
             )}
           </div>
 
-          {userTranscript && !isListening && (
-            <button
-              onClick={() => setUserTranscript("")}
-              className="text-sm text-slate-500 hover:text-slate-700"
-            >
-              Clear & try again
-            </button>
-          )}
+          <p className="text-center text-xs text-amber-700 mt-3">
+            💡 ถ้า AI ฟังไม่ถูก ให้แก้ไขข้อความด้านบนก่อนกด Send
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+          <p className="text-xs text-slate-500 mb-2">Type what you want to say in English:</p>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={typedInput}
+              onChange={(e) => setTypedInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Type your reply..."
+              className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            <button
+              onClick={() => sendMessage()}
+              disabled={loading || !typedInput.trim()}
+              className="px-5 py-3 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 disabled:opacity-50 transition-colors"
+            >
+              Send →
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            Use this if speech recognition doesn&apos;t understand your accent
+          </p>
+        </div>
+      )}
 
       {/* Instructions */}
-      <div className="mt-6 space-y-3 text-sm text-slate-600">
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-          <strong>💡 Tips:</strong> Speak clearly and at normal pace. Take your time. Don't rush.
+      <div className="mt-4 space-y-2 text-sm">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-800">
+          <strong>💡 Tips for better recognition:</strong> พูดช้าๆ ชัดๆ วางปากห่างจาก mic นิดนึง และพยายาม stress syllable ตามภาษาอังกฤษ
         </div>
-        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-          <strong>🔊 Listening:</strong> After you send, the AI will speak back. Listen carefully!
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-800">
+          <strong>🔊 AI speaks back:</strong> หลังส่งข้อความ AI จะพูดตอบให้ฟัง ฝึกฟังสำเนียงด้วย!
         </div>
       </div>
     </div>
