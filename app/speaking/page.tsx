@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useCallback, useEffect } from "react";
+import { useSpeech } from "@/app/hooks/useSpeech";
 
 interface Topic {
   id: string;
@@ -96,6 +97,7 @@ export default function SpeakingPage() {
   const [sessionsCount, setSessionsCount] = useState(0);
   const [customTopic, setCustomTopic] = useState("");
   const [showCustom, setShowCustom] = useState(false);
+  const { speak } = useSpeech();
 
   useEffect(() => {
     const saved = localStorage.getItem("tangmogolearn_progress");
@@ -216,6 +218,15 @@ export default function SpeakingPage() {
           <h2 className="font-bold text-slate-900">{session.topic.title}</h2>
           {session.loading && (
             <span className="text-sm text-orange-600 animate-pulse ml-2">✨ AI Coach is preparing...</span>
+          )}
+          {session.coaching && !session.loading && (
+            <button
+              onClick={() => speak(session.coaching)}
+              className="text-sm text-orange-600 hover:text-orange-700 font-medium ml-auto"
+              title="Listen to coaching"
+            >
+              🔊 Listen
+            </button>
           )}
         </div>
 

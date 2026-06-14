@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSpeech } from "@/app/hooks/useSpeech";
 
 interface WordCard {
   word: string;
@@ -57,6 +58,7 @@ export default function VocabularyPage() {
   const [filter, setFilter] = useState<"all" | "beginner" | "intermediate" | "advanced">("all");
   const [mode, setMode] = useState<"flashcard" | "list">("flashcard");
   const [wordsLearned, setWordsLearned] = useState(0);
+  const { speak } = useSpeech();
 
   const filteredWords = wordBank.filter(
     (w) => filter === "all" || w.difficulty === filter
@@ -206,11 +208,25 @@ export default function VocabularyPage() {
               {!flipped ? (
                 <>
                   <h2 className="text-4xl font-bold text-slate-900 mb-4">{current.word}</h2>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); speak(current.word, 0.9); }}
+                    className="text-slate-400 hover:text-orange-600 transition-colors mb-2"
+                    title="Hear pronunciation"
+                  >
+                    🔊 Listen
+                  </button>
                   <p className="text-slate-400 text-sm">Tap to see definition</p>
                 </>
               ) : (
                 <>
                   <p className="text-xl text-slate-700 mb-4 font-medium">{current.definition}</p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); speak(current.example); }}
+                    className="text-slate-400 hover:text-orange-600 transition-colors mb-2 text-sm"
+                    title="Hear example"
+                  >
+                    🔊 Example
+                  </button>
                   <p className="text-slate-500 italic text-sm border-t border-slate-100 pt-4 mt-2">
                     &ldquo;{current.example}&rdquo;
                   </p>

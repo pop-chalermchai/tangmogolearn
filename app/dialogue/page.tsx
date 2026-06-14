@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSpeech } from "@/app/hooks/useSpeech";
 
 interface Scenario {
   id: string;
@@ -113,6 +114,7 @@ export default function DialoguePage() {
   const [loading, setLoading] = useState(false);
   const [sessionsCount, setSessionsCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { speak } = useSpeech();
 
   useEffect(() => {
     const saved = localStorage.getItem("tangmogolearn_progress");
@@ -262,7 +264,7 @@ export default function DialoguePage() {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed group ${
                   msg.role === "user"
                     ? "bg-emerald-600 text-white rounded-br-sm"
                     : "bg-slate-100 text-slate-800 rounded-bl-sm"
@@ -275,6 +277,17 @@ export default function DialoguePage() {
                     <span className="animate-bounce" style={{ animationDelay: "0.1s" }}>.</span>
                     <span className="animate-bounce" style={{ animationDelay: "0.2s" }}>.</span>
                   </span>
+                )}
+                {msg.content && (
+                  <button
+                    onClick={() => speak(msg.content)}
+                    className={`ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium ${
+                      msg.role === "user" ? "text-white hover:text-emerald-100" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                    title="Hear this message"
+                  >
+                    🔊
+                  </button>
                 )}
               </div>
             </div>

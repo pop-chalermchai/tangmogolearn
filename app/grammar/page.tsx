@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSpeech } from "@/app/hooks/useSpeech";
 
 interface Exercise {
   id: number;
@@ -93,6 +94,7 @@ export default function GrammarPage() {
   const [loading, setLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
+  const { speak } = useSpeech();
 
   const exercise = exercises[currentEx];
 
@@ -195,6 +197,13 @@ export default function GrammarPage() {
           <span className="bg-purple-100 text-purple-700 text-sm font-medium px-3 py-1 rounded-full">
             {exercise.topic}
           </span>
+          <button
+            onClick={() => speak(exercise.sentence.replace(/_+/g, "[blank]"))}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            title="Hear the sentence"
+          >
+            🔊 Listen
+          </button>
           <button
             onClick={() => setShowHint(!showHint)}
             className="text-sm text-amber-600 hover:text-amber-700 font-medium"
