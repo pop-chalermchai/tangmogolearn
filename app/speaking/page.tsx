@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useCallback, useEffect } from "react";
 
 interface Topic {
@@ -260,6 +261,39 @@ export default function SpeakingPage() {
         </p>
         <div className="mt-2 text-sm text-slate-500">
           Sessions completed: <strong className="text-orange-600">{sessionsCount}</strong>
+        </div>
+      </div>
+
+      {/* Mode selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        {/* Speaking Coach (Text-based) */}
+        <div className="bg-white border-2 border-orange-200 rounded-2xl p-6">
+          <div className="text-4xl mb-3">📚</div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Speaking Coach</h2>
+          <p className="text-slate-600 text-sm mb-4">
+            Get personalized guidance on pronunciation, phrases, and speaking techniques. Read at your own pace.
+          </p>
+          <button
+            onClick={() => setShowCustom(true)}
+            className="w-full px-4 py-2.5 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 transition-colors text-sm"
+          >
+            Read Coaching →
+          </button>
+        </div>
+
+        {/* Speaking Practice (Voice-based) */}
+        <div className="bg-white border-2 border-emerald-200 rounded-2xl p-6">
+          <div className="text-4xl mb-3">🎙️</div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Speaking Practice</h2>
+          <p className="text-slate-600 text-sm mb-4">
+            Speak out loud! Record yourself and practice real conversations. AI listens and responds.
+          </p>
+          <Link
+            href="/speaking/practice"
+            className="block w-full px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors text-sm text-center"
+          >
+            Start Speaking →
+          </Link>
         </div>
       </div>
 
